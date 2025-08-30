@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 24px;
+      color: #333;
+    }
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .loader {
+      display: none;
+      font-size: 14px;
+      color: #555;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .card {
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 12px;
+      background: #fafafa;
+      text-align: center;
+    }
+    .thumb {
+      width: 96px;
+      height: 96px;
+      image-rendering: pixelated;
+    }
+    .muted {
+      color: #6b7280;
+      font-size: 12px;
+    }
+    button {
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      background: #fff;
+      cursor: pointer;
+    }
+    button:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+    .pokemon-types {
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+      font-size: 10px;
+    }
+    .type {
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: white;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+    /* タイプごとの色 */
+    .normal { background-color: #A8A878; } .fire { background-color: #F08030; }
+    .water { background-color: #6890F0; } .grass { background-color: #78C850; }
+    .electric { background-color: #F8D030; } .ice { background-color: #98D8D8; }
+    .fighting { background-color: #C03028; } .poison { background-color: #A040A0; }
+    .ground { background-color: #E0C068; } .flying { background-color: #A890F0; }
+    .psychic { background-color: #F85888; } .bug { background-color: #A8B820; }
+    .rock { background-color: #B8A038; } .ghost { background-color: #705898; }
+    .dragon { background-color: #7038F8; } .steel { background-color: #B8B8D0; }
+    .dark { background-color: #705848; } .fairy { background-color: #EE99AC; }
+  </style>
+</head>
+<body>
+  <h1>色違いポケモン検索</h1>
+
+  <div class="toolbar">
+    <label for="color">色：</label>
+    <select id="color">
+      <option value="black">くろ</option>
+      <option value="blue">あお</option>
+      <option value="brown">ちゃ</option>
+      <option value="gray">はいいろ</option>
+      <option value="green">みどり</option>
+      <option value="pink">ピンク</option>
+      <option value="purple">むらさき</option>
+      <option value="red">あか</option>
+      <option value="white">しろ</option>
+      <option value="yellow">きいろ</option>
+      <option value="other">その他</option>
+    </select>
+    
+    <label for="type">タイプ：</label>
+    <select id="type">
+      <option value="all">すべて</option>
+      <option value="normal">ノーマル</option>
+      <option value="fire">ほのお</option>
+      <option value="water">みず</option>
+      <option value="grass">くさ</option>
+      <option value="electric">でんき</option>
+      <option value="ice">こおり</option>
+      <option value="fighting">かくとう</option>
+      <option value="poison">どく</option>
+      <option value="ground">じめん</option>
+      <option value="flying">ひこう</option>
+      <option value="psychic">エスパー</option>
+      <option value="bug">むし</option>
+      <option value="rock">いわ</option>
+      <option value="ghost">ゴースト</option>
+      <option value="dragon">ドラゴン</option>
+      <option value="steel">はがね</option>
+      <option value="dark">あく</option>
+      <option value="fairy">フェアリー</option>
+    </select>
+
+    <label for="sort">並び順：</label>
+    <select id="sort">
+      <option value="id-asc">図鑑昇順</option>
+      <option value="id-desc">図鑑降順</option>
+      <option value="name-asc">五十音順</option>
+    </select>
+    
+    <button id="btn" onclick="search()">検索</button>
+    <span id="loader" class="loader">読み込み中...</span>
+    <span id="count" class="muted"></span>
+  </div>
+
+  <div id="results" class="grid"></div>
+
+  <script>
+    // データをキャッシュするための変数
+    let allPokemonData = null;
+
+    // 初回にJSONファイルを読み込む
+    async function loadData() {
+        if (allPokemonData) {
+            return allPokemonData;
+        }
+        try {
+            const response = await fetch('https://drive.google.com/file/d/1E_m-youaFxSzMIbXOk0v9_z6UabF8FwS/view?usp=sharing');
+            if (!response.ok) {
+                throw new Error('shiny_colors.json の取得に失敗しました。ファイルが同じディレクトリにあるか確認してください。');
+            }
+            allPokemonData = await response.json();
+            return allPokemonData;
+        } catch (e) {
+            document.getElementById('results').innerHTML = `<div class="muted">エラー: ${e.message}</div>`;
+            return null;
+        }
+    }
+
+    async function search() {
+      const color = document.getElementById('color').value;
+      const type = document.getElementById('type').value;
+      const sortOrder = document.getElementById('sort').value;
+
+      const btn = document.getElementById('btn');
+      const loader = document.getElementById('loader');
+      const resultsDiv = document.getElementById('results');
+      const count = document.getElementById('count');
+
+      btn.disabled = true;
+      loader.style.display = 'inline';
+      resultsDiv.innerHTML = '';
+      count.textContent = '';
+
+      // ローカルのデータを読み込む
+      const data = await loadData();
+      if (!data) {
+          loader.style.display = 'none';
+          btn.disabled = false;
+          return;
+      }
+      
+      // 元のsearchPokemon関数のロジックを直接実行
+      let results = [];
+      for (const id in data) {
+        const info = data[id];
+        const colorMatch = info.palette && info.palette.some(p => p.class === color);
+        const typeMatch = (type === 'all') || (info.types && info.types.includes(type));
+
+        if (colorMatch && typeMatch) {
+          results.push({
+            id: Number(id),
+            jpName: info.jpName,
+            enName: info.enName,
+            types: info.types,
+            shiny_url: info.shiny_url,
+            colors: info.palette.map(p => p.class)
+          });
+        }
+      }
+
+      switch (sortOrder) {
+        case 'id-asc':
+          results.sort((a, b) => a.id - b.id);
+          break;
+        case 'id-desc':
+          results.sort((a, b) => b.id - a.id);
+          break;
+        case 'name-asc':
+          results.sort((a, b) => {
+            const nameA = a.jpName || a.enName;
+            const nameB = b.jpName || b.enName;
+            return nameA.localeCompare(nameB, 'ja');
+          });
+          break;
+        default:
+          results.sort((a, b) => a.id - b.id);
+          break;
+      }
+
+      // 結果の表示
+      loader.style.display = 'none';
+      btn.disabled = false;
+      
+      count.textContent = `ヒット: ${results.length}件`;
+
+      if (!results.length) {
+        resultsDiv.innerHTML = '<div class="muted">該当するポケモンが見つかりませんでした。</div>';
+        return;
+      }
+
+      const fragment = document.createDocumentFragment();
+      results.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        
+        const typeSpans = item.types.map(t => `<span class="type ${t}">${t}</span>`).join('');
+        
+        card.innerHTML = `
+          <div><img class="thumb" loading="lazy" src="${item.shiny_url}" alt="${item.jpName}"></div>
+          <div>#${item.id} ${item.jpName} (${item.enName})</div>
+          <div class="pokemon-types">${typeSpans}</div>
+          <div class="muted">色: ${item.colors.join(', ')}</div>
+        `;
+        fragment.appendChild(card);
+      });
+      resultsDiv.appendChild(fragment);
+    }
+  </script>
+</body>
+</html>
