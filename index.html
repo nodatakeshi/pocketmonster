@@ -143,7 +143,7 @@
             return allPokemonData;
         }
         try {
-            const response = await fetch('https://drive.google.com/file/d/1E_m-youaFxSzMIbXOk0v9_z6UabF8FwS/view?usp=sharing');
+            const response = await fetch('shiny_colors.json');
             if (!response.ok) {
                 throw new Error('shiny_colors.json の取得に失敗しました。ファイルが同じディレクトリにあるか確認してください。');
             }
@@ -246,4 +246,5 @@
     }
   </script>
 </body>
+
 </html>
